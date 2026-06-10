@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoomStatus {
+  WAITING
+  PLAYING
+  FINISHED
+  ABANDONED
+}
+
+enum GameStatus {
+  IN_PROGRESS
+  FINISHED
+}
+
+enum ParticipantResult {
+  WIN
+  LOSS
+  DRAW
+}
+
+enum MoveType {
+  ATTACK
+  DEFEND
+  TAKE
+  TRANSFER
+  END
+}
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  name      String
+  avatarUrl String?
+  createdAt DateTime @default(now())
+
+  hostedRooms  GameRoom[]        @relation("RoomHost")
+  memberships  RoomMember[]
+  participations GameParticipant[]
+  stats        PlayerStats?
+  opponents    RecentOpponent[]  @relation("OpponentOwner")
+  asOpponent   RecentOpponent[]  @relation("OpponentTarget")
+  wonGames     Game[]            @relation("GameWinner")
+  lostGames    Game[]            @relation("GameLoser")
+}
+
+model GameRoom {
+  id        String     @id @default(cuid())
+  code      String     @unique
+  status    RoomStatus @default(WAITING)
+  hostId    String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  host    User         @relation("RoomHost", fields: [hostId], references: [id])
+  members RoomMember[]
+  games   Game[]
+}
+
+model RoomMember {
+  id       String   @id @default(cuid())
+  roomId   String
+  userId   String
+  isReady  Boolean  @default(false)
+  joinedAt DateTime @default(now())
+
+  room GameRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+}
+
+model Game {
+  id         String     @id @default(cuid())
+  roomId     String
+  status     GameStatus @default(IN_PROGRESS)
+  trumpSuit  String
+  /// Full authoritative engine state for reload / resume.
+  state      Json
+  winnerId   String?
+  loserId    String?
+  startedAt  DateTime   @default(now())
+  finishedAt DateTime?
+
+  room         GameRoom          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  winner       User?             @relation("GameWinner", fields: [winnerId], references: [id])
+  loser        User?             @relation("GameLoser", fields: [loserId], references: [id])
+  participants GameParticipant[]
+  moves        GameMove[]
+}
+
+model GameParticipant {
+  id     String             @id @default(cuid())
+  gameId String
+  userId String
+  seat   Int
+  result ParticipantResult?
+
+  game  Game       @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moves GameMove[]
+
+  @@unique([gameId, userId])
+  @@unique([gameId, seat])
+}
+
+model GameMove {
+  id            String   @id @default(cuid())
+  gameId        String
+  participantId String
+  sequence      Int
+  type          MoveType
+  payload       Json
+  createdAt     DateTime @default(now())
+
+  game        Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  participant GameParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, sequence])
+}
+
+model PlayerStats {
+  userId      String @id
+  gamesPlayed Int    @default(0)
+  wins        Int    @default(0)
+  losses      Int    @default(0)
+  draws       Int    @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RecentOpponent {
+  id           String   @id @default(cuid())
+  userId       String
+  opponentId   String
+  gamesPlayed  Int      @default(0)
+  wins         Int      @default(0)
+  losses       Int      @default(0)
+  lastPlayedAt DateTime @default(now())
+
+  user     User @relation("OpponentOwner", fields: [userId], references: [id], onDelete: Cascade)
+  opponent User @relation("OpponentTarget", fields: [opponentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, opponentId])
+}

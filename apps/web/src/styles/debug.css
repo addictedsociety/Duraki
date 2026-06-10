@@ -1,0 +1,4 @@
+/* Toggle by adding the `debug` class to any container to outline its children. */
+.debug * {
+  outline: 1px solid color-mix(in oklch, var(--primary) 60%, transparent);
+}

@@ -1,0 +1,23 @@
+{
+  "name": "duraki",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter \"./apps/*\" dev",
+    "dev:web": "pnpm --filter @duraki/web dev",
+    "dev:server": "pnpm --filter @duraki/server dev",
+    "build": "pnpm -r build",
+    "test": "pnpm --filter @duraki/game-core test",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "pnpm --filter @duraki/server prisma:migrate",
+    "db:generate": "pnpm --filter @duraki/server prisma:generate"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: duraki-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: duraki
+      POSTGRES_PASSWORD: duraki
+      POSTGRES_DB: duraki
+    ports:
+      - "5432:5432"
+    volumes:
+      - duraki-pgdata:/var/lib/postgresql/data
+
+volumes:
+  duraki-pgdata:
