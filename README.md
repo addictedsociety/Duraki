@@ -96,6 +96,69 @@ pnpm dev          # startet Web (Port 5173) und Server (Port 3001) parallel
 
 App öffnen: http://localhost:5173
 
+## Ohne Deployment testen (Cloudflare Tunnel)
+
+Mit einem **Cloudflare Quick Tunnel** lässt sich die lokal laufende App über eine öffentliche `https://…trycloudflare.com`-URL erreichbar machen – ohne Account, ohne eigene Domain und ohne Deployment. Ideal, um z. B. einem Mitspieler einen Link zu schicken oder auf dem Handy zu testen.
+
+Da Frontend (Port `5173`) und Backend (Port `3001`) getrennte Dienste sind, werden **zwei Tunnel** benötigt.
+
+### 1. cloudflared installieren
+
+```bash
+# macOS
+brew install cloudflared
+
+# Alternativ: Binary von Cloudflare
+# https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/
+```
+
+### 2. App lokal starten
+
+```bash
+pnpm db:up
+pnpm dev          # Web auf 5173, Server auf 3001
+```
+
+### 3. Tunnel für den Server öffnen
+
+```bash
+cloudflared tunnel --url http://localhost:3001
+```
+
+Cloudflared gibt eine URL aus, z. B. `https://server-xxxx.trycloudflare.com`. Diese ist die **Server-Tunnel-URL**.
+
+### 4. Tunnel für das Frontend öffnen
+
+In einem zweiten Terminal:
+
+```bash
+cloudflared tunnel --url http://localhost:5173
+```
+
+Das ergibt die **Web-Tunnel-URL**, z. B. `https://web-yyyy.trycloudflare.com` – diese öffnest du im Browser bzw. teilst sie.
+
+### 5. Umgebungsvariablen auf die Tunnel-URLs setzen
+
+**`apps/web/.env`** – das Frontend muss das Backend über den Server-Tunnel ansprechen:
+
+```env
+VITE_SERVER_URL="https://server-xxxx.trycloudflare.com"
+```
+
+**`apps/server/.env`** – das Backend muss den Web-Tunnel als Origin (CORS) erlauben:
+
+```env
+WEB_ORIGIN="https://web-yyyy.trycloudflare.com"
+```
+
+Danach `pnpm dev` neu starten, damit Vite und der Server die neuen Werte laden. (`*.trycloudflare.com` ist in der Vite-Config bereits als erlaubter Host hinterlegt.)
+
+### 6. Clerk-Origin freigeben
+
+Damit der Google-Login über den Tunnel funktioniert, die Web-Tunnel-URL im **Clerk-Dashboard** unter den erlaubten Origins/Domains des Dev-Instances eintragen.
+
+> **Hinweise:** Quick-Tunnel-URLs sind temporär und ändern sich bei jedem Neustart von `cloudflared` – Schritt 5/6 dann wiederholen. Für eine stabile, gleichbleibende URL einen benannten Tunnel mit eigener Domain einrichten und diese ggf. über `VITE_ALLOWED_HOSTS` in `apps/web/.env` ergänzen.
+
 ## Wichtige Skripte
 
 | Befehl | Beschreibung |
