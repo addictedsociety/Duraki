@@ -78,7 +78,7 @@ watch(
       <span class="text-sm text-muted-foreground">Einladungscode</span>
       <button
         type="button"
-        class="flex items-center gap-3 text-4xl font-black tracking-[0.3em]"
+        class="flex items-center gap-3 text-3xl font-black tracking-[0.2em] sm:text-4xl sm:tracking-[0.3em]"
         @click="copyCode"
       >
         {{ rooms.room.code }}
@@ -95,8 +95,8 @@ watch(
         class="flex items-center gap-3 p-3"
       >
         <NxrAvatar :name="member.name" :src="member.avatarUrl" />
-        <div class="flex flex-1 flex-col">
-          <span class="font-medium">{{ member.name }}</span>
+        <div class="flex min-w-0 flex-1 flex-col">
+          <span class="truncate font-medium">{{ member.name }}</span>
           <span v-if="member.isHost" class="text-xs text-muted-foreground">Host</span>
         </div>
         <Badge :variant="member.isReady ? 'success' : 'secondary'">

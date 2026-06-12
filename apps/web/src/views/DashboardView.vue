@@ -77,7 +77,7 @@ onMounted(load);
     </Card>
 
     <!-- Stats -->
-    <section class="grid grid-cols-4 gap-2">
+    <section class="grid grid-cols-2 gap-2 sm:grid-cols-4">
       <Card class="flex flex-col items-center gap-1 p-3">
         <span class="text-2xl font-black">{{ dashboard?.stats.gamesPlayed ?? 0 }}</span>
         <span class="text-xs text-muted-foreground">Spiele</span>
@@ -110,8 +110,8 @@ onMounted(load);
         class="flex items-center gap-3 p-3"
       >
         <NxrAvatar :name="opponent.name" :src="opponent.avatarUrl" size="sm" />
-        <div class="flex flex-1 flex-col">
-          <span class="font-medium">{{ opponent.name }}</span>
+        <div class="flex min-w-0 flex-1 flex-col">
+          <span class="truncate font-medium">{{ opponent.name }}</span>
           <span class="text-xs text-muted-foreground">{{ opponent.gamesPlayed }} Spiele</span>
         </div>
         <Badge variant="success">{{ opponent.wins }}S</Badge>
@@ -138,8 +138,8 @@ onMounted(load);
           :src="entry.opponents[0]?.avatarUrl ?? null"
           size="sm"
         />
-        <div class="flex flex-1 flex-col">
-          <span class="font-medium">{{ entry.opponents[0]?.name ?? "Unbekannt" }}</span>
+        <div class="flex min-w-0 flex-1 flex-col">
+          <span class="truncate font-medium">{{ entry.opponents[0]?.name ?? "Unbekannt" }}</span>
           <span class="text-xs text-muted-foreground">{{ formatDate(entry.startedAt) }}</span>
         </div>
         <Badge v-if="entry.result === 'WIN'" variant="success">Sieg</Badge>

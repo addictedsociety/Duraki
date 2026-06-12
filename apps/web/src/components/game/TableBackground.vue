@@ -10,20 +10,11 @@ import {
   Timer,
   WebGLRenderer,
 } from "three";
-import type { ThemeId } from "@/types/theme.type";
 import { useThemeStore } from "@/stores/theme";
 
 const theme = useThemeStore();
 
 const canvas = ref<HTMLCanvasElement | null>(null);
-
-type Palette = { a: number; b: number; glow: number };
-const PALETTES: Record<ThemeId, Palette> = {
-  default: { a: 0x2e5d4b, b: 0x16271f, glow: 0xd8b24a },
-  emerald: { a: 0x2f7a5a, b: 0x13301f, glow: 0xe3c24d },
-  crimson: { a: 0x5e2630, b: 0x220f12, glow: 0xd99a55 },
-  royal: { a: 0x3a2f6a, b: 0x171430, glow: 0xc9a8f0 },
-};
 
 let renderer: WebGLRenderer | null = null;
 let scene: Scene | null = null;
@@ -37,12 +28,34 @@ let observer: ResizeObserver | null = null;
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const applyPalette = (id: ThemeId): void => {
+// Liest eine CSS-Custom-Property (z. B. --felt-from) und löst sie über ein
+// Probe-Element + Canvas zu einem von three.js parsebaren Hex-Wert auf.
+// So folgt der 3D-Tisch automatisch dem aktiven Theme + Mode.
+const resolveColor = (cssVar: string, fallback: string): string => {
+  const probe = document.createElement("span");
+  probe.style.cssText = `position:absolute;visibility:hidden;color:var(${cssVar})`;
+  document.body.appendChild(probe);
+  const resolved = getComputedStyle(probe).color;
+  probe.remove();
+
+  const ctx = document.createElement("canvas").getContext("2d");
+  if (!ctx) return fallback;
+  ctx.fillStyle = fallback;
+  ctx.fillStyle = resolved || fallback;
+  return ctx.fillStyle;
+};
+
+const applyPalette = (): void => {
   if (!material) return;
-  const palette = PALETTES[id];
-  (material.uniforms.uColorA.value as Color).setHex(palette.a);
-  (material.uniforms.uColorB.value as Color).setHex(palette.b);
-  (material.uniforms.uGlow.value as Color).setHex(palette.glow);
+  (material.uniforms.uColorA.value as Color).set(
+    resolveColor("--felt-from", "#2e5d4b"),
+  );
+  (material.uniforms.uColorB.value as Color).set(
+    resolveColor("--felt-to", "#16271f"),
+  );
+  (material.uniforms.uGlow.value as Color).set(
+    resolveColor("--trump-glow", "#d8b24a"),
+  );
 };
 
 const resize = (): void => {
@@ -109,7 +122,7 @@ onMounted(() => {
   mesh = new Mesh(geometry, material);
   scene.add(mesh);
 
-  applyPalette(theme.themeId);
+  applyPalette();
   resize();
 
   observer = new ResizeObserver(() => {
@@ -124,10 +137,13 @@ onMounted(() => {
 });
 
 watch(
-  () => theme.themeId,
-  (id) => {
-    applyPalette(id);
-    if (reducedMotion) renderOnce();
+  () => [theme.themeId, theme.resolvedMode],
+  () => {
+    // Nach dem DOM-Update (data-theme/data-mode) die neuen Farben lesen.
+    requestAnimationFrame(() => {
+      applyPalette();
+      if (reducedMotion) renderOnce();
+    });
   },
 );
 
